@@ -21,20 +21,24 @@ with open(config_path, 'r') as file:
 
 radar = "MBR2"
 date = config["radar_params"][radar]["date"]
-start_time=config["radar_params"][radar]["start_time"]
-path_to_spectra = config["radar_params"][radar]["path_to_spectra"].format(date=date, start_time=start_time)
-path_to_l1 = config["radar_params"][radar]["path_to_l1"].format(date=date, start_time=start_time)
+file_time=config["radar_params"][radar]["file_time"]
+path_to_spectra = config["radar_params"][radar]["path_to_spectra"].format(date=date, file_time=file_time)
+path_to_l1 = config["radar_params"][radar]["path_to_l1"].format(date=date, file_time=file_time)
 title = config["radar_params"][radar]["plot_title"]
 nlevels = config["radar_params"][radar]["reflectivity_levels"]
 range_lines = config["radar_params"][radar]["range_indices"]
-snapshot_folder = config["radar_params"][radar]["snapshot_folder"].format(date=date, start_time=start_time)
-movie_folder = config["radar_params"][radar]["movie_folder"].format(date=date, start_time=start_time)
+snapshot_folder = config["radar_params"][radar]["snapshot_folder"].format(date=date, file_time=file_time)
+movie_folder = config["radar_params"][radar]["movie_folder"].format(date=date, file_time=file_time)
 
 cbar_kwargs = config["plot_params"]["cbar_kwargs"]
 figure_size = config["plot_params"]["figure_size"]
 ylim_alt = config["plot_params"]["ylim_alt"]
 ylim_spec = config["plot_params"]["ylim_spec"]
+vmin_Ze, vmax_Ze = config["plot_params"]["vmin_Ze"], config["plot_params"]["vmax_Ze"]
 fs = config["plot_params"]["fontsize"]
+
+start_time = f"{date[:4]}-{date[4:6]}-{date[6:]}T{config['radar_params'][radar]['start_time']}"
+end_time = f"{date[:4]}-{date[4:6]}-{date[6:]}T{config['radar_params'][radar]['end_time']}"
 
 
 # -----------------------------------------------------------
@@ -57,7 +61,7 @@ else:
 # -----------------------------------------------------------
 # Read CORAL NETCDF Spectra
 
-mbr2_spec = read_zspc_using_search(path_to_spectra+f"/{date}_{start_time}.zspc.bz2")     
+mbr2_spec = read_zspc_using_search(path_to_spectra+f"/{date}_{file_time}.zspc.bz2").sel(time=slice(start_time, end_time))    
 time = mbr2_spec.time.values
 range_num = mbr2_spec.range.values
 altitude = 150 + range_num*31.18
@@ -73,7 +77,7 @@ SPCco[:,0:99,:] = mbr2_spec.power[:,0,0:99,:].fillna(mbr2_spec.hsdv[:,0,0:99]).v
 # cat = intake.open_catalog("https://tcodata.mpimet.mpg.de/catalog.yaml")
 # mbr2_ds = cat.BCO.radar_MBR2_c4_v1.to_dask()
 mbr2_ds = xr.open_dataset(path_to_l1+f"/MMCR__MBR2__Spectral_Moments__2s__155m-18km__{date[2:]}.nc")
-mbr2_ds = mbr2_ds.sel(time=slice(mbr2_spec.time[0], mbr2_spec.time[-1]))
+mbr2_ds = mbr2_ds.sel(time=slice(start_time, end_time)) 
 
 print(mbr2_ds)
 print(mbr2_spec)
@@ -84,7 +88,7 @@ print(mbr2_spec)
 # Initialize Reflectivity and Mean Doppler Velocity plots only once
 fig = plt.figure(figsize=figure_size, facecolor="white")
 plt.subplots_adjust(top=0.95, bottom=0.06, left=0.05, right=0.95, hspace=0.15, wspace=0.05)
-fig.suptitle(title, fontsize=fs)
+fig.suptitle(title + f" - {date}", fontsize=fs)
 
 # Set up grid plot
 spec = GridSpec(ncols=5, nrows=6, width_ratios=[0.3, 0.01, 0.05, 0.3, 0.01], height_ratios=[0.5, 0.5, 0.1, 1, 0.1, 0.1], figure=fig)
@@ -98,7 +102,7 @@ ax4 = fig.add_subplot(spec[3, 3:-1])
 
 # Plot Reflectivity (Static)
 Ze_cloud = np.where(mbr2_ds.Ze < -50, np.nan, mbr2_ds.Ze)
-levels_Ze = np.linspace(-50, 40, nlevels + 1)
+levels_Ze = np.linspace(vmin_Ze, vmax_Ze, nlevels + 1)
 im_Ze = ax1.contourf(mbr2_ds.time.values.astype("datetime64[ns]"), mbr2_ds.range.values, Ze_cloud.transpose(), cmap="viridis", levels=levels_Ze, zorder=-10)
 cbar_Ze = fig.colorbar(im_Ze, cax=cax1, **cbar_kwargs)
 cbar_Ze.set_label("$Z_e$ [dBZ]", fontsize=fs, rotation=270, labelpad=15)
@@ -139,7 +143,7 @@ line_ax1 = ax1.axvline(x=mbr2_ds.time[0].values, linestyle=":", linewidth=2, col
 line_ax2 = ax2.axvline(x=mbr2_ds.time[0].values, linestyle=":", linewidth=2, color="k")
 
 # Loop through each time step for Spectrum Heat Map and Lines
-for t, timestep in enumerate(mbr2_spec.time.values[:]):
+for t, timestep in enumerate(mbr2_spec.time.values):
 
     try:
         # Update vertical line positions for the current time step
@@ -156,7 +160,7 @@ for t, timestep in enumerate(mbr2_spec.time.values[:]):
         ax4.plot(doppler_vel, SPCco[t, range_lines[2], :], color="orange", label=f"{mbr2_ds.range[range_lines[2]].values} m")
 
         ax4.set_yscale("log")
-        ax4.set_ylim((1e-1, 1e8))
+        ax4.set_ylim(1e-2, 1e2)
         ax4.yaxis.set_label_position("right")
         ax4.yaxis.tick_right()
         ax4.set_ylabel("SPCco [power]", fontsize=fs, rotation=270, labelpad=15)
@@ -164,8 +168,6 @@ for t, timestep in enumerate(mbr2_spec.time.values[:]):
         ax4.margins(x=0)
         ax4.legend(fontsize=fs)
 
-        # Update title and save
-        plt.title(f"time={timestep}", fontsize=fs)
         plt.savefig(f"{snapshot_folder}/MBR2_snapshot_{timestep.astype('datetime64[s]').astype(int)}.png", bbox_inches="tight")
 
     except IndexError:
@@ -174,4 +176,4 @@ for t, timestep in enumerate(mbr2_spec.time.values[:]):
 # -----------------------------------------------------------
 # Make movie from snapshots
 
-video_from_snapshots(snapshot_folder, movie_folder + f"{radar}_{date}_{start_time}.mp4", fps=12)
+video_from_snapshots(snapshot_folder, movie_folder + f"{radar}_{date}_{file_time}.mp4", fps=12)
