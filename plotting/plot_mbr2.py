@@ -79,9 +79,6 @@ SPCco[:,0:99,:] = mbr2_spec.power[:,0,0:99,:].fillna(mbr2_spec.hsdv[:,0,0:99]).v
 mbr2_ds = xr.open_dataset(path_to_l1+f"/MMCR__MBR2__Spectral_Moments__2s__155m-18km__{date[2:]}.nc")
 mbr2_ds = mbr2_ds.sel(time=slice(start_time, end_time)) 
 
-print(mbr2_ds)
-print(mbr2_spec)
-
 # -----------------------------------------------------------
 # Plot radar data evolution in time
 
