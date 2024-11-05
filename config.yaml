@@ -1,18 +1,22 @@
 radar_params:
   MBR2:
     date: "20240924"
-    start_time: "1500"
+    file_time: "1500"
+    start_time: "17:30"
+    end_time: "18:00"
     path_to_spectra: "/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/data/MBR2/mom/{date}"
     path_to_l1: "/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/data/MBR2/Level_1"
     plot_title: "Ka-Band (MBR2)"
     range_indices: [10, 40, 100]
     reflectivity_levels: 15
-    snapshot_folder: "/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/figures/snapshots/MBR2/{date}/{date}_{start_time}"
+    snapshot_folder: "/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/figures/snapshots/MBR2/{date}/{date}_{file_time}"
     movie_folder: "/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/figures/movies/MBR2/{date}"
 
 plot_params:
   cbar_kwargs: {"orientation": "vertical", "aspect":40, "fraction":0.05,"pad":0.005}
   figure_size: [16,10]
   ylim_alt: [0,4000]
-  ylim_spec: [1e-1,1e8]
+  ylim_spec: [1e-2,1e2]
+  vmin_Ze: -50
+  vmax_Ze: -20
   fontsize: 12
