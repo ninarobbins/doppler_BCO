@@ -166,7 +166,7 @@ for t, timestep in enumerate(mbr2_spec.time.values):
         ax4.set_ylabel("SPCco [power]", fontsize=fs, rotation=270, labelpad=15)
         ax4.set_xlabel("Doppler Velocity [ms$^{-1}$]", fontsize=fs)
         ax4.margins(x=0)
-        ax4.legend(fontsize=fs)
+        ax4.legend(fontsize=fs, loc="upper left")
 
         plt.savefig(f"{snapshot_folder}/MBR2_snapshot_{timestep.astype('datetime64[s]').astype(int)}.png", bbox_inches="tight")
 
@@ -176,4 +176,4 @@ for t, timestep in enumerate(mbr2_spec.time.values):
 # -----------------------------------------------------------
 # Make movie from snapshots
 
-video_from_snapshots(snapshot_folder, movie_folder + f"{radar}_{date}_{file_time}.mp4", fps=12)
+video_from_snapshots(snapshot_folder, movie_folder + f"/{radar}_{date}_{file_time}.mp4", fps=12)
