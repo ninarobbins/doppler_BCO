@@ -86,6 +86,6 @@ ax1.spines["top"].set_visible(False)
 ax1.spines[["left", "bottom"]].set_position(("outward", 5))
 
 
-plt.savefig("/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/figures/reflectivity/{radar}_comparison.png",
+plt.savefig(f"/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/figures/reflectivity/{radar}_comparison.png",
             bbox_inches="tight")
 plt.show()
