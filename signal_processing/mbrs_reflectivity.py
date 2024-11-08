@@ -6,10 +6,33 @@ import yaml
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "utils"))
-from read_zspc_d_qf2 import read_zspc_using_search
-from radar_utils import compute_reflectivity_MBR2
+# from radar_utils import compute_reflectivity_MBRS
 
 import numpy as np
+
+
+def compute_reflectivity_MBRS(SPC_co, HSDV, RadarConst, range_val, COFA, NPW1):
+    """
+    Calculate total reflectivity Z using the formula in MBRS RadarConst5 metadata.
+    2.21 is the correction included by Lutz (MBRS to MBR2 correction).
+
+    Parameters:
+    - SPC_co: Array of spectral power components (SPC values).
+    - HSD_co: Threshold for SPC values to be included in the sum.
+    - RadarConst: Radar constant, typically at 5 km.
+    - range_val: Range in meters for which reflectivity is calculated.
+    - COFA: Signal-to-noise ratio correction factor.
+    - NPW1: Normalization factor (defaults to 1 if not provided).
+
+    Returns:
+    - Reflectivity Z.
+    """
+    
+    SPCcoi = np.ma.masked_less_equal(SPC_co.transpose(), HSDV)
+    SPCcoi = (SPCcoi-HSDV).transpose()
+    Z = np.nansum(SPCcoi, axis = 1)*RadarConst*(range_val/5e3)**2*COFA/NPW1
+
+    return 10*np.log10(Z)
 
 
 # -----------------------------------------------------------
@@ -34,7 +57,7 @@ plt.rcParams['ytick.major.size'] = 6
 # -----------------------------------------------------------
 # Radar info
 
-radar = "MBR2"
+radar = "MBRS"
 date = config["radar_params"][radar]["date"]
 file_time=config["radar_params"][radar]["file_time"]
 path_to_spectra = config["radar_params"][radar]["path_to_spectra"].format(date=date, file_time=file_time)
@@ -45,15 +68,15 @@ use_time = "2024-09-24T17:40"
 
 # -----------------------------------------------------------
 # Read CORAL NETCDF Spectra
-mbr2_spec = read_zspc_using_search(path_to_spectra+f"/{date}_{file_time}.zspc.bz2").sel(time=use_time, method="nearest")  
-altitude = 150 + mbr2_spec.range.values*31.18
-fft_line = mbr2_spec.fftline.values
-doppler_vel = fft_line * 10.66145/256 - 10.66145
-SPCco = mbr2_spec.power[0, :, :]
-RadarConst5 = mbr2_spec.RadarConst5.values
-COFA = mbr2_spec.cofa[0, :].values
-HSDV = mbr2_spec.hsdv[0, :].values
-NPW1 = mbr2_spec.NPW1.values
+mbrs_ds = xr.open_dataset(path_to_spectra, chunks={})
+print(mbrs_ds)
+altitude = mbrs_ds.range.values
+doppler_vel = mbrs_ds.doppler
+SPCco = mbrs_ds.SPCco.values
+RadarConst5 = mbrs_ds.RadarConst5.values
+COFA = mbrs_ds.SNRCorFaCo.values
+HSDV = mbrs_ds.hsdv[0, :].values
+NPW1 = mbrs_ds.NPW1.values
 range_gate = 155.9+np.arange(605.0, dtype = float)*31.18
 
 

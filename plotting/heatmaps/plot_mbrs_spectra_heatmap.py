@@ -14,6 +14,7 @@ fs = 14
 # Path to data
 path_to_mbrs = "/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/data/MBRS/mom/20230303_0100.znc"
 mbrs_ds = xr.open_dataset(path_to_mbrs, chunks={})
+print(mbrs_ds.)
 
 # Folder to save snapshots
 snapshot_folder = f"/Users/ninarobbins/Desktop/PhD/Rain_Evaporation/figures/snapshots/heatmaps/MBRS/{path_to_mbrs[0][-22:-4]}"
